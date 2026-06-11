@@ -241,7 +241,7 @@ createBtn.addEventListener("click", async () => {
   const colorEntry = COLOR_CYCLE[colorIndex];
 
   try {
-    await addToMaster([{ displayName: storedName, color: colorEntry.preset }]);
+    await addToMaster([{ displayName: storedName, color: Office.MailboxEnums.CategoryColor["Preset" + colorEntry.preset] }]);
     await addToItem([storedName]);
 
     allCategories.push({
