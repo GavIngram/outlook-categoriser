@@ -310,6 +310,62 @@
       flex: 1;
       min-height: 0;
     }
+
+    /* ── Context menu ── */
+    .ctx-menu {
+      position: fixed;
+      background: #2d2d2d;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0,0,0,.5);
+      z-index: 200;
+      min-width: 150px;
+      display: none;
+      flex-direction: column;
+      padding: 4px 0;
+    }
+    .ctx-menu.visible { display: flex; }
+    .ctx-item {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 7px 14px;
+      text-align: left;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      transition: background .1s;
+    }
+    .ctx-item:hover { background: var(--bg-hover); }
+    .ctx-item.danger { color: var(--error); }
+
+    /* ── Inline rename ── */
+    .rename-input {
+      flex: 1;
+      min-width: 0;
+      background: #2a2a2a;
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      padding: 2px 6px;
+      outline: none;
+    }
+    .rename-confirm, .rename-cancel {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 3px 6px;
+      font-size: 13px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .rename-confirm { color: var(--success); }
+    .rename-confirm:hover { background: var(--success-light); }
+    .rename-cancel { color: var(--text-secondary); }
+    .rename-cancel:hover { background: var(--bg-hover); }
   </style>
 </head>
 <body>
@@ -368,6 +424,11 @@
     <span id="statusText"></span>
   </div>
 
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+  <button class="ctx-item" id="ctxRename">Rename</button>
+  <button class="ctx-item danger" id="ctxInactive">Mark inactive</button>
 </div>
 
 <script src="taskpane.js"></script>

@@ -34,6 +34,8 @@ let allCategories = [];
 let appliedNames  = new Set();
 let searchTerm    = "";
 let busy          = false;
+let ctxCat        = null;
+let renamingCat   = null;
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const $  = id => document.getElementById(id);
@@ -51,6 +53,9 @@ const emptyState     = $("emptyState");
 const createBtn      = $("createBtn");
 const createBtnLabel = $("createBtnLabel");
 const refreshBtn     = $("refreshBtn");
+const ctxMenu        = $("ctxMenu");
+const ctxRename      = $("ctxRename");
+const ctxInactive    = $("ctxInactive");
 const statusEl       = $("status");
 const statusIcon     = $("statusIcon");
 const statusText     = $("statusText");
@@ -79,6 +84,9 @@ async function init() {
 function onItemChanged() {
   appliedNames = new Set();
   busy = false;
+  renamingCat = null;
+  ctxCat = null;
+  ctxMenu.classList.remove("visible");
   searchTerm = "";
   searchInput.value = "";
   clearBtn.classList.remove("visible");
@@ -156,9 +164,10 @@ function render() {
   const term = searchTerm.trim();
   const lower = term.toLowerCase();
 
+  const allActive = allCategories.filter(c => !c.displayName.startsWith("."));
   const filtered = term
-    ? allCategories.filter(c => c.displayName.toLowerCase().includes(lower))
-    : allCategories;
+    ? allActive.filter(c => c.displayName.toLowerCase().includes(lower))
+    : allActive;
 
   // List
   categoryList.innerHTML = "";
@@ -178,19 +187,41 @@ function render() {
       li.className = "cat-item" + (isApplied ? " applied" : "");
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", isApplied ? "true" : "false");
-      li.innerHTML =
-        `<span class="cat-dot" style="background:${cat.colorHex}"></span>
-         <span class="cat-name" title="${escHtml(cat.displayName)}">${escHtml(friendlyName(cat.displayName))}</span>
-         ${isApplied
-           ? `<span class="applied-badge">✓ Applied</span><span class="remove-hint">Remove</span>`
-           : ""}`;
-      li.addEventListener("click", () => toggleCategory(cat, isApplied));
+
+      if (renamingCat && renamingCat.displayName === cat.displayName) {
+        li.innerHTML =
+          `<span class="cat-dot" style="background:${cat.colorHex}"></span>
+           <input class="rename-input" value="${escHtml(friendlyName(cat.displayName))}" />
+           <button class="rename-confirm" title="Confirm">✓</button>
+           <button class="rename-cancel" title="Cancel">✗</button>`;
+        const inp = li.querySelector(".rename-input");
+        const ok  = li.querySelector(".rename-confirm");
+        const cnl = li.querySelector(".rename-cancel");
+        setTimeout(() => { inp.focus(); inp.select(); }, 0);
+        inp.addEventListener("keydown", e => {
+          if (e.key === "Enter")  confirmRename(cat, inp.value.trim());
+          if (e.key === "Escape") cancelRename();
+        });
+        ok.addEventListener("click",  e => { e.stopPropagation(); confirmRename(cat, inp.value.trim()); });
+        cnl.addEventListener("click", e => { e.stopPropagation(); cancelRename(); });
+        li.addEventListener("click", e => e.stopPropagation());
+      } else {
+        li.innerHTML =
+          `<span class="cat-dot" style="background:${cat.colorHex}"></span>
+           <span class="cat-name" title="${escHtml(cat.displayName)}">${escHtml(friendlyName(cat.displayName))}</span>
+           ${isApplied
+             ? `<span class="applied-badge">✓ Applied</span><span class="remove-hint">Remove</span>`
+             : ""}`;
+        li.addEventListener("click", () => toggleCategory(cat, isApplied));
+        li.addEventListener("contextmenu", e => { e.preventDefault(); showCtxMenu(e.clientX, e.clientY, cat); });
+      }
+
       categoryList.appendChild(li);
     });
   }
 
   // Create new hint & button
-  const exactMatch = allCategories.some(
+  const exactMatch = allActive.some(
     c => c.displayName.toLowerCase() === lower || friendlyName(c.displayName).toLowerCase() === lower
   );
   const showCreate = term && !exactMatch;
@@ -312,6 +343,9 @@ clearBtn.addEventListener("click", () => {
 refreshBtn.addEventListener("click", async () => {
   if (busy) return;
   refreshBtn.disabled = true;
+  renamingCat = null;
+  ctxCat = null;
+  ctxMenu.classList.remove("visible");
   mainContent.classList.remove("visible");
   allCategories = [];
   appliedNames = new Set();
@@ -406,4 +440,123 @@ function escHtml(s) {
 function colorPresetToHex(preset) {
   const found = COLOR_CYCLE.find(c => c.preset === preset);
   return found ? found.hex : "#767676";
+}
+
+// ── Context menu ──────────────────────────────────────────────────────────
+function showCtxMenu(x, y, cat) {
+  ctxCat = cat;
+  ctxMenu.style.left = x + "px";
+  ctxMenu.style.top  = y + "px";
+  ctxMenu.classList.add("visible");
+  requestAnimationFrame(() => {
+    const r = ctxMenu.getBoundingClientRect();
+    if (r.right  > window.innerWidth)  ctxMenu.style.left = (x - r.width)  + "px";
+    if (r.bottom > window.innerHeight) ctxMenu.style.top  = (y - r.height) + "px";
+  });
+}
+
+document.addEventListener("click", e => {
+  if (!ctxMenu.contains(e.target)) {
+    ctxMenu.classList.remove("visible");
+    ctxCat = null;
+  }
+});
+
+ctxRename.addEventListener("click", () => {
+  if (!ctxCat) return;
+  renamingCat = ctxCat;
+  ctxCat = null;
+  ctxMenu.classList.remove("visible");
+  render();
+});
+
+ctxInactive.addEventListener("click", async () => {
+  if (!ctxCat) return;
+  const cat = ctxCat;
+  ctxCat = null;
+  ctxMenu.classList.remove("visible");
+  await markInactive(cat);
+});
+
+// ── Inline rename ─────────────────────────────────────────────────────────
+function cancelRename() {
+  renamingCat = null;
+  render();
+}
+
+async function confirmRename(cat, newFriendlyName) {
+  if (!newFriendlyName) { cancelRename(); return; }
+  if (newFriendlyName === friendlyName(cat.displayName)) { cancelRename(); return; }
+
+  const allActive = allCategories.filter(c => !c.displayName.startsWith("."));
+  if (allActive.some(c => c !== cat && friendlyName(c.displayName).toLowerCase() === newFriendlyName.toLowerCase())) {
+    showStatus("error", `"${newFriendlyName}" already exists`, crossIcon());
+    return;
+  }
+
+  renamingCat = null;
+  busy = true;
+  const epoch = Math.floor(Date.now() / 1000);
+  const newStoredName = newFriendlyName + "_" + epoch;
+
+  try {
+    await addToMaster([{ displayName: newStoredName, color: cat.color }]);
+    await removeMaster([cat.displayName]);
+
+    if (appliedNames.has(cat.displayName)) {
+      await removeFromItem([cat.displayName]);
+      await addToItem([newStoredName]);
+      appliedNames.delete(cat.displayName);
+      appliedNames.add(newStoredName);
+    }
+
+    cat.displayName = newStoredName;
+    allCategories.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    showStatus("success", `Renamed to "${newFriendlyName}"`, checkIcon());
+    clearStatusAfter(3000);
+  } catch (e) {
+    showStatus("error", "Rename failed: " + e.message, crossIcon());
+  } finally {
+    busy = false;
+    render();
+  }
+}
+
+// ── Mark inactive ─────────────────────────────────────────────────────────
+async function markInactive(cat) {
+  if (busy) return;
+  busy = true;
+  const oldName      = cat.displayName;
+  const newStoredName = "." + oldName;
+
+  try {
+    await addToMaster([{ displayName: newStoredName, color: cat.color }]);
+    await removeMaster([oldName]);
+
+    if (appliedNames.has(oldName)) {
+      await removeFromItem([oldName]);
+      await addToItem([newStoredName]);
+      appliedNames.delete(oldName);
+      appliedNames.add(newStoredName);
+    }
+
+    cat.displayName = newStoredName;
+    showStatus("success", `"${friendlyName(oldName)}" marked inactive`, checkIcon());
+    clearStatusAfter(3000);
+  } catch (e) {
+    showStatus("error", "Failed: " + e.message, crossIcon());
+  } finally {
+    busy = false;
+    render();
+  }
+}
+
+// ── Remove from master list ───────────────────────────────────────────────
+function removeMaster(names) {
+  return new Promise((res, rej) => {
+    Office.context.mailbox.masterCategories.removeAsync(names, r => {
+      if (r.status === Office.AsyncResultStatus.Succeeded) res();
+      else rej(new Error(r.error?.message || "Failed to remove category"));
+    });
+  });
 }
