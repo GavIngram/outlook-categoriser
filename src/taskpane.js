@@ -54,6 +54,7 @@ const createBtn      = $("createBtn");
 const createBtnLabel = $("createBtnLabel");
 const refreshBtn     = $("refreshBtn");
 const ctxMenu        = $("ctxMenu");
+const ctxFind        = $("ctxFind");
 const ctxRename      = $("ctxRename");
 const ctxInactive    = $("ctxInactive");
 const statusEl       = $("status");
@@ -465,6 +466,34 @@ document.addEventListener("click", e => {
     ctxMenu.classList.remove("visible");
     ctxCat = null;
   }
+});
+
+ctxFind.addEventListener("click", () => {
+  if (!ctxCat) return;
+  const name  = friendlyName(ctxCat.displayName);
+  const query = `category:"${name}"`;
+  ctxCat = null;
+  ctxMenu.classList.remove("visible");
+
+  // Copy the KQL search query to clipboard so the user can paste it into
+  // the Outlook search bar (no Office.js API exists to trigger search directly).
+  let copied = false;
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = query;
+    ta.style.cssText = "position:fixed;top:-9999px;left:-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    copied = document.execCommand("copy");
+    document.body.removeChild(ta);
+  } catch (_) {}
+
+  showStatus(
+    "info",
+    copied ? `Copied — paste into Outlook search bar` : `Search: ${query}`,
+    `<path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.099zm-5.242 1.156a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"/>`
+  );
+  clearStatusAfter(5000);
 });
 
 ctxRename.addEventListener("click", () => {
