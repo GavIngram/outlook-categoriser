@@ -292,7 +292,7 @@ createBtn.addEventListener("click", async () => {
 
     allCategories.push({
       displayName: storedName,
-      color: colorEntry.preset,
+      color: Office.MailboxEnums.CategoryColor["Preset" + colorEntry.preset],
       colorHex: colorEntry.hex,
     });
     allCategories.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -436,9 +436,14 @@ function escHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-// Map Office CategoryColor preset integer to a display hex
+// Map Office CategoryColor preset to a display hex.
+// The Office API returns string enum values ("Preset0", "Preset1", …);
+// normalise to integer before looking up.
 function colorPresetToHex(preset) {
-  const found = COLOR_CYCLE.find(c => c.preset === preset);
+  const n = typeof preset === "string"
+    ? parseInt(preset.replace(/\D/g, ""), 10)
+    : preset;
+  const found = COLOR_CYCLE.find(c => c.preset === n);
   return found ? found.hex : "#767676";
 }
 
