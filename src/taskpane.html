@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Categoriser</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #0078d4;
+      --accent-dark: #005a9e;
+      --accent-light: #deecf9;
+      --success: #107c10;
+      --success-light: #dff6dd;
+      --error: #a4262c;
+      --error-light: #fde7e9;
+      --warning-light: #fff4ce;
+      --text: #201f1e;
+      --text-secondary: #605e5c;
+      --border: #d2d0ce;
+      --border-focus: #0078d4;
+      --bg: #ffffff;
+      --bg-hover: #f3f2f1;
+      --bg-selected: #deecf9;
+      --applied-bg: #e6f3e6;
+      --applied-text: #107c10;
+      --radius: 4px;
+      --tag-colors: #0078d4, #107c10, #8764b8, #ca5010, #038387, #c43e1c, #004e8c, #0b6a0b;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      padding: 12px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .header-icon {
+      width: 24px; height: 24px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon svg { width: 14px; height: 14px; fill: white; }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .header-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* ── Search / input ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 6px;
+    }
+    .search-icon {
+      position: absolute;
+      left: 9px; top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      fill: var(--text-secondary);
+      pointer-events: none;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 8px 32px 8px 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s;
+    }
+    #searchInput:focus { border-color: var(--border-focus); box-shadow: 0 0 0 2px rgba(0,120,212,.2); }
+    .clear-btn {
+      position: absolute;
+      right: 8px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      cursor: pointer; padding: 2px;
+      color: var(--text-secondary);
+      display: none; align-items: center; justify-content: center;
+      border-radius: 2px;
+    }
+    .clear-btn:hover { color: var(--text); background: var(--bg-hover); }
+    .clear-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .clear-btn.visible { display: flex; }
+
+    /* ── Create new hint ── */
+    #createHint {
+      display: none;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      border: 1px solid rgba(0,120,212,.25);
+      font-size: 12px;
+      color: var(--accent-dark);
+    }
+    #createHint strong { font-weight: 600; }
+    #createHint.visible { display: block; }
+    #createHint .epoch-note {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ── List ── */
+    .list-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+      padding-left: 2px;
+    }
+    #categoryList {
+      list-style: none;
+      overflow-y: auto;
+      max-height: 340px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+    }
+    #categoryList:empty { display: none; }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0eeec;
+      transition: background .1s;
+      user-select: none;
+      position: relative;
+    }
+    .cat-item:last-child { border-bottom: none; }
+    .cat-item:hover { background: var(--bg-hover); }
+    .cat-item.applied { background: var(--applied-bg); }
+    .cat-item.applied:hover { background: #d6efd6; }
+
+    .cat-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cat-name {
+      flex: 1;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cat-item.applied .cat-name { color: var(--applied-text); font-weight: 600; }
+
+    .applied-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--applied-text);
+      background: rgba(16,124,16,.12);
+      padding: 1px 6px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .remove-hint {
+      font-size: 10px;
+      color: var(--error);
+      display: none;
+      flex-shrink: 0;
+    }
+    .cat-item.applied:hover .remove-hint { display: block; }
+    .cat-item.applied:hover .applied-badge { display: none; }
+
+    /* ── Create button ── */
+    #createBtn {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: background .15s;
+    }
+    #createBtn:hover { background: var(--accent-dark); }
+    #createBtn:disabled { background: var(--border); cursor: not-allowed; }
+    #createBtn.visible { display: flex; }
+    #createBtn svg { width: 14px; height: 14px; fill: white; }
+
+    /* ── Empty state ── */
+    #emptyState {
+      display: none;
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    #emptyState.visible { display: block; }
+
+    /* ── Status toast ── */
+    #status {
+      display: none;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      margin-top: 8px;
+      align-items: center;
+      gap: 7px;
+    }
+    #status.visible { display: flex; }
+    #status.success { background: var(--success-light); color: var(--success); }
+    #status.error   { background: var(--error-light);   color: var(--error); }
+    #status.info    { background: var(--accent-light);  color: var(--accent-dark); }
+    #status svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+
+    /* ── Loading ── */
+    #loading {
+      text-align: center;
+      padding: 32px 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Applied section ── */
+    .applied-section {
+      margin-bottom: 10px;
+      display: none;
+    }
+    .applied-section.visible { display: block; }
+    .applied-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 4px;
+    }
+    .applied-tag {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px 3px 6px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--applied-bg);
+      color: var(--applied-text);
+      border: 1px solid rgba(16,124,16,.2);
+    }
+    .applied-tag-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── No-item warning ── */
+    #noItem {
+      display: none;
+      padding: 16px;
+      background: var(--warning-light);
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: #7a6300;
+      text-align: center;
+    }
+    #noItem.visible { display: block; }
+
+    .main-content { display: none; }
+    .main-content.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">
+    <svg viewBox="0 0 16 16"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm0 6a1 1 0 011-1h10a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V9z"/></svg>
+  </div>
+  <h1>Project Categoriser</h1>
+  <span class="header-sub" id="categoryCount"></span>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div><br>Loading categories…
+</div>
+
+<div id="noItem">
+  Select an email in the reading pane to categorise it.
+</div>
+
+<div class="main-content" id="mainContent">
+
+  <!-- Applied tags summary -->
+  <div class="applied-section" id="appliedSection">
+    <div class="list-label">Applied to this email</div>
+    <div class="applied-tags" id="appliedTags"></div>
+  </div>
+
+  <!-- Search box -->
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.099zm-5.242 1.156a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"/></svg>
+    <input id="searchInput" type="text" placeholder="Search or type new project name…" autocomplete="off" spellcheck="false"/>
+    <button class="clear-btn" id="clearBtn" title="Clear" tabindex="-1">
+      <svg viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 11.708-.708L8 7.293l5.146-5.147a.5.5 0 01.708.708L8.707 8l5.147 5.146a.5.5 0 01-.708.708L8 8.707l-5.146 5.147a.5.5 0 01-.708-.708L7.293 8z"/></svg>
+    </button>
+  </div>
+
+  <!-- Create new hint -->
+  <div id="createHint">
+    <strong id="createHintName"></strong> — new project
+    <div class="epoch-note" id="epochNote"></div>
+  </div>
+
+  <!-- Category list -->
+  <div class="list-label" id="listLabel">All projects</div>
+  <ul id="categoryList" role="listbox" aria-label="Project categories"></ul>
+  <div id="emptyState">No matching projects found.</div>
+
+  <!-- Create button -->
+  <button id="createBtn">
+    <svg viewBox="0 0 16 16"><path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z"/></svg>
+    <span id="createBtnLabel">Create & apply project</span>
+  </button>
+
+  <!-- Status -->
+  <div id="status" role="status" aria-live="polite">
+    <svg viewBox="0 0 16 16" id="statusIcon"></svg>
+    <span id="statusText"></span>
+  </div>
+
+</div>
+
+<script src="taskpane.js"></script>
+</body>
+</html>
