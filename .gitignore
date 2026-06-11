@@ -1,3 +1,6 @@
 # General / Environment
 .history
 .env
+
+# Claude Code - personal settings
+.claude/settings.local.json

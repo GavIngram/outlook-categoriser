@@ -14,7 +14,7 @@
   <Description DefaultValue="Quickly assign emails to projects using categories"/>
   <IconUrl DefaultValue="https://gavingram.github.io/outlook-categoriser/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://gavingram.github.io/outlook-categoriser/assets/icon-128.png"/>
-  <SupportUrl DefaultValue="https://gavingram.github.io/outlook-categoriser"/>
+  <SupportUrl DefaultValue="https://gavingram.github.io/outlook-categoriser/src/taskpane.html"/>
   <AppDomains>
     <AppDomain>gavingram.github.io</AppDomain>
   </AppDomains>
