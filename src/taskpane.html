@@ -259,22 +259,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Multi-select banner ── */
-    #multiBanner {
-      display: none;
-      align-items: center;
-      gap: 7px;
-      padding: 8px 10px;
-      background: var(--accent-light);
-      border: 1px solid rgba(0,120,212,.25);
-      border-radius: var(--radius);
-      font-size: 12px;
-      color: var(--accent-dark);
-      margin-bottom: 10px;
-    }
-    #multiBanner.visible { display: flex; }
-    #multiBanner svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
-
     /* ── No-item warning ── */
     #noItem {
       display: none;
@@ -306,16 +290,10 @@
 </div>
 
 <div id="noItem">
-  Select one or more emails to categorise.
+  Select an email in the reading pane to categorise it.
 </div>
 
 <div class="main-content" id="mainContent">
-
-  <!-- Multi-select banner -->
-  <div id="multiBanner">
-    <svg viewBox="0 0 16 16"><path d="M2 2h12v1.5H2V2zm0 5h12v1.5H2V7zm0 5h12v1.5H2V12z"/></svg>
-    <span id="multiCount"></span>
-  </div>
 
   <!-- Search box -->
   <div class="search-wrap">
