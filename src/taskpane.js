@@ -78,15 +78,34 @@ async function init() {
 // ── Fires when the selected email changes (keeps pinned pane in sync) ──────
 function onItemChanged() {
   appliedNames = new Set();
+  busy = false;
   searchTerm = "";
   searchInput.value = "";
   clearBtn.classList.remove("visible");
   statusEl.className = "";
   clearTimeout(statusTimer);
 
-  noItem.classList.remove("visible");
-  mainContent.classList.remove("visible");
+  if (!Office.context.mailbox.item) {
+    mainContent.classList.remove("visible");
+    noItem.classList.add("visible");
+    return;
+  }
 
+  noItem.classList.remove("visible");
+
+  // Master list doesn't change between emails — skip re-fetching it.
+  // Just reload the applied state for the new item and re-render in place.
+  if (allCategories.length > 0) {
+    Office.context.mailbox.item.categories.getAsync(itemResult => {
+      if (itemResult.status === Office.AsyncResultStatus.Succeeded) {
+        appliedNames = new Set((itemResult.value || []).map(c => c.displayName));
+      }
+      render();
+    });
+    return;
+  }
+
+  // First load — master list not yet cached, fetch everything.
   showLoading(true);
   loadAll()
     .then(() => showLoading(false))
