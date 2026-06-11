@@ -1,32 +1,39 @@
 "use strict";
 
-// ── Colour palette cycling for new categories ──────────────────────────────
+// ── Colour palette — hex values match Outlook 365 / OWA category presets ──
+// Source: Slipstick Systems reverse-engineering of OWA category colour swatches.
+// Preset names (from Office.MailboxEnums.CategoryColor docs):
+//   0=Red 1=Orange 2=Brown 3=Yellow 4=Green 5=Teal 6=Olive 7=Blue
+//   8=Purple 9=Cranberry 10=Steel 11=DarkSteel 12=Gray 13=DarkGray
+//   14=Black 15=DarkRed 16=DarkOrange 17=DarkBrown 18=DarkYellow
+//   19=DarkGreen 20=DarkTeal 21=DarkOlive 22=DarkBlue 23=DarkPurple
+//   24=DarkCranberry
 const COLOR_CYCLE = [
-  { preset: 0,  hex: "#e74856" },
-  { preset: 1,  hex: "#ff8c00" },
-  { preset: 2,  hex: "#f7630c" },
-  { preset: 3,  hex: "#ca5010" },
-  { preset: 4,  hex: "#da3b01" },
-  { preset: 5,  hex: "#ef6950" },
-  { preset: 6,  hex: "#d13438" },
-  { preset: 7,  hex: "#ff4343" },
-  { preset: 8,  hex: "#ffb900" },
-  { preset: 9,  hex: "#c0cb00" },
-  { preset: 10, hex: "#10893e" },
-  { preset: 11, hex: "#00b7c3" },
-  { preset: 12, hex: "#0078d4" },
-  { preset: 13, hex: "#4a4af4" },
-  { preset: 14, hex: "#881798" },
-  { preset: 15, hex: "#744da9" },
-  { preset: 16, hex: "#8e8cd8" },
-  { preset: 17, hex: "#038387" },
-  { preset: 18, hex: "#107c10" },
-  { preset: 19, hex: "#486860" },
-  { preset: 20, hex: "#525e54" },
-  { preset: 21, hex: "#7e735f" },
-  { preset: 22, hex: "#a0522d" },
-  { preset: 23, hex: "#767676" },
-  { preset: 24, hex: "#4c4c4c" },
+  { preset: 0,  hex: "#dc626d" },  // Red
+  { preset: 1,  hex: "#e8825d" },  // Orange
+  { preset: 2,  hex: "#bc8f6f" },  // Brown
+  { preset: 3,  hex: "#fdee65" },  // Yellow
+  { preset: 4,  hex: "#52ce90" },  // Green
+  { preset: 5,  hex: "#57d2da" },  // Teal
+  { preset: 6,  hex: "#b6d767" },  // Olive
+  { preset: 7,  hex: "#5ca9e5" },  // Blue
+  { preset: 8,  hex: "#b1aaeb" },  // Purple
+  { preset: 9,  hex: "#ee5fb7" },  // Cranberry
+  { preset: 10, hex: "#4497a9" },  // Steel
+  { preset: 11, hex: "#4bb4b7" },  // DarkSteel
+  { preset: 12, hex: "#9fadb1" },  // Gray
+  { preset: 13, hex: "#8f8f8f" },  // DarkGray
+  { preset: 14, hex: "#474747" },  // Black
+  { preset: 15, hex: "#ac4e5e" },  // DarkRed
+  { preset: 16, hex: "#df8e64" },  // DarkOrange
+  { preset: 17, hex: "#c8956c" },  // DarkBrown
+  { preset: 18, hex: "#dac257" },  // DarkYellow
+  { preset: 19, hex: "#4ca64c" },  // DarkGreen
+  { preset: 20, hex: "#2d6f8f" },  // DarkTeal
+  { preset: 21, hex: "#85b44c" },  // DarkOlive
+  { preset: 22, hex: "#4179a3" },  // DarkBlue
+  { preset: 23, hex: "#a589cb" },  // DarkPurple
+  { preset: 24, hex: "#c34e98" },  // DarkCranberry
 ];
 
 // ── State ──────────────────────────────────────────────────────────────────
