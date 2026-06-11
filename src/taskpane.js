@@ -50,7 +50,7 @@ const categoryList   = $("categoryList");
 const emptyState     = $("emptyState");
 const createBtn      = $("createBtn");
 const createBtnLabel = $("createBtnLabel");
-const categoryCount  = $("categoryCount");
+const refreshBtn     = $("refreshBtn");
 const statusEl       = $("status");
 const statusIcon     = $("statusIcon");
 const statusText     = $("statusText");
@@ -159,10 +159,6 @@ function render() {
   const filtered = term
     ? allCategories.filter(c => c.displayName.toLowerCase().includes(lower))
     : allCategories;
-
-  categoryCount.textContent = allCategories.length
-    ? allCategories.length + " project" + (allCategories.length === 1 ? "" : "s")
-    : "";
 
   // List
   categoryList.innerHTML = "";
@@ -311,6 +307,28 @@ clearBtn.addEventListener("click", () => {
   clearBtn.classList.remove("visible");
   searchInput.focus();
   render();
+});
+
+refreshBtn.addEventListener("click", async () => {
+  if (busy) return;
+  refreshBtn.disabled = true;
+  mainContent.classList.remove("visible");
+  allCategories = [];
+  appliedNames = new Set();
+  searchTerm = "";
+  searchInput.value = "";
+  clearBtn.classList.remove("visible");
+  statusEl.className = "";
+  clearTimeout(statusTimer);
+  showLoading(true);
+  try {
+    await loadAll();
+  } catch (e) {
+    showStatus("error", "Refresh failed: " + e.message);
+  } finally {
+    showLoading(false);
+    refreshBtn.disabled = false;
+  }
 });
 
 // ── Office API helpers (promisified) ──────────────────────────────────────
