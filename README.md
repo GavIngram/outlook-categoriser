@@ -40,14 +40,103 @@ The add-in is hosted at **https://gavingram.github.io/outlook-categoriser/** —
 
 ---
 
+## Validating the manifest
+
+**Always validate before deploying.** The admin center and the deployment cmdlets reject an invalid manifest with opaque errors — *"Wrong Package. Your package does not match submission type"* or *"Unable to extract Add-In's details"* — that don't say what's actually wrong. Microsoft's official validator does:
+
+```powershell
+npx --yes office-addin-manifest validate manifest.xml
+```
+
+It runs Microsoft's schema + acceptance checks and reports the real problem with a line number. Needs Node.js installed; `npx` fetches the tool on demand (no install).
+
+**Gotchas this caught here** (both previously blocked all deployment):
+- The root element **must** be `xsi:type="MailApp"`. The legacy `xsi:type="MessageReadApp"` is no longer recognised by the validation gateway and causes the "Wrong Package" / "Package Type Not Identified" rejection.
+- `<SupportsPinning>` is only legal inside the **VersionOverrides v1.1** `<Action>`, not v1.0.
+
+---
+
 ## Deploying for your whole organisation
 
-For company-wide rollout so everyone gets the button automatically:
+Company-wide rollout uses the **Centralized Deployment** PowerShell module (the proven working method here). You need a **Global Admin** account.
 
-1. Go to [admin.microsoft.com](https://admin.microsoft.com) → **Settings** → **Integrated apps** → **Upload custom apps**
-2. Upload `manifest.xml`
-3. Assign to specific users, groups, or the whole organisation
-4. Users get the button automatically — no action needed on their end
+### One-time setup
+
+```powershell
+Install-Module -Name O365CentralizedAddInDeployment   # first time only
+Import-Module  -Name O365CentralizedAddInDeployment
+Connect-OrganizationAddInService                       # sign in as Global Admin
+```
+
+### Deploy to one person (do this first, to test)
+
+```powershell
+New-OrganizationAddIn `
+  -ManifestPath 'https://gavingram.github.io/outlook-categoriser/manifest.xml' `
+  -Locale 'en-AU' `
+  -Members 'someone@virtualgraffiti.com.au'
+```
+
+`-ManifestPath` accepts the hosted URL (single source of truth) or a local file path. On success it returns the add-in's **ProductId**, which is the same as the manifest `<Id>`:
+
+```
+2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6
+```
+
+The button can take up to 24 hours to appear (usually minutes); users may need to restart Outlook.
+
+### Deploy to everyone
+
+If it isn't uploaded yet, upload first (omitting `-Members` assigns it to nobody initially):
+
+```powershell
+New-OrganizationAddIn -ManifestPath 'https://gavingram.github.io/outlook-categoriser/manifest.xml' -Locale 'en-AU'
+```
+
+Then assign it to the whole organisation:
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6 -AssignToEveryone $true
+```
+
+To scope to specific people/groups instead of everyone:
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6 -Add -Members 'a@virtualgraffiti.com.au','team@virtualgraffiti.com.au'
+```
+
+### GUI alternative
+
+Once the manifest is valid, the admin center also works: [admin.microsoft.com](https://admin.microsoft.com) → **Settings** → **Integrated apps** → **Add-ins** → **Deploy Add-in** → provide the manifest URL.
+
+---
+
+## Updating the manifest and redeploying
+
+1. Edit `manifest.xml`.
+2. **Bump the version** — increase `<Version>` (e.g. `1.0.0.0` → `1.0.0.1`). Updates will not propagate otherwise.
+3. Validate: `npx --yes office-addin-manifest validate manifest.xml`
+4. Commit and push so GitHub Pages serves the new file:
+   ```powershell
+   git add manifest.xml; git commit -m "Update manifest to vX.Y.Z"; git push
+   ```
+5. Push the update into the tenant (re-uses the existing ProductId):
+   ```powershell
+   Set-OrganizationAddIn `
+     -ProductId 2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6 `
+     -ManifestPath 'https://gavingram.github.io/outlook-categoriser/manifest.xml' `
+     -Locale 'en-AU'
+   ```
+
+> Changes to requested **permissions** or **events** require an admin to re-consent before users receive the update.
+
+### Managing / removing the deployment
+
+```powershell
+Get-OrganizationAddIn                                                      # list all add-ins + ProductIds
+Set-OrganizationAddIn -ProductId 2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6 -Enabled $false   # disable (keep assignment)
+Remove-OrganizationAddIn -ProductId 2e7b12fe-72e1-4e3d-b7c0-f39f7fb383c6   # remove entirely
+```
 
 ---
 
