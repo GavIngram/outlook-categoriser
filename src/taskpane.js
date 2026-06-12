@@ -172,7 +172,7 @@ function render() {
   const term = searchTerm.trim();
   const lower = term.toLowerCase();
 
-  const allActive = allCategories.filter(c => !c.displayName.startsWith("."));
+  const allActive = allCategories.filter(c => !c.displayName.startsWith("ω."));
   const filtered = term
     ? allActive.filter(c => c.displayName.toLowerCase().includes(lower))
     : allActive;
@@ -529,7 +529,7 @@ async function confirmRename(cat, newFriendlyName) {
   if (!newFriendlyName) { cancelRename(); return; }
   if (newFriendlyName === friendlyName(cat.displayName)) { cancelRename(); return; }
 
-  const allActive = allCategories.filter(c => !c.displayName.startsWith("."));
+  const allActive = allCategories.filter(c => !c.displayName.startsWith("ω."));
   if (allActive.some(c => c !== cat && friendlyName(c.displayName).toLowerCase() === newFriendlyName.toLowerCase())) {
     showStatus("error", `"${newFriendlyName}" already exists`, crossIcon());
     return;
@@ -568,7 +568,7 @@ async function markInactive(cat) {
   if (busy) return;
   busy = true;
   const oldName      = cat.displayName;
-  const newStoredName = "." + oldName;
+  const newStoredName = "ω." + oldName;
 
   try {
     await addToMaster([{ displayName: newStoredName, color: cat.color }]);
